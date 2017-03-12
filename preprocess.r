@@ -2,24 +2,9 @@
 setwd('~/Desktop/moto_crash')
 
 require(dplyr)
-require(ggmap)
+require(missForest)
+#require(ggmap)
 source('SWITRS_func_and_lookups.r')
-
-# #Not In Use For Now.. needs work to link data
-# #https://data.lacity.org/A-Livable-and-Sustainable-City/Road-Surface-Condition-Map/d9rz-k88a
-# pci = tbl_df(read.csv('~/Desktop/moto_crash/road_conditions_2017.csv',
-#                stringsAsFactors = F,
-#                #quote = "\"",
-#                header=T))
-# 
-# #Look at Variability of Ratings Within Streets
-# pci %>% 
-#   group_by(ST_NAME) %>% 
-#   summarise(n_obs=n(), 
-#             mean_pci = mean(PCI), 
-#             min_pci=min(PCI), 
-#             max_pci=max(PCI)) %>% 
-#   arrange(desc(n_obs))
 
 #SWITRS Bike, Pedestrian and Motorcycle Data
 #Collision Table
@@ -27,31 +12,28 @@ collision = tbl_df(read.csv('~/Desktop/moto_crash/switrs/CollisionRecords.txt',
                      header=T, 
                      strip.white = T, 
                      na.strings = c("NA","","-"))) 
-# #Not In Use For Now.. data quality issues
-# #(At Fault) Party Table
+
+# ## Additional data sources not currently in use
+# ##    (Further work needed to clean/link the datasets)
+#
+# #SWITRS Party Table - (Contains records for victims as well)
 # party = tbl_df(read.csv('~/Desktop/moto_crash/switrs/PartyRecords.txt',
 #                             header=T, 
 #                             strip.white = T, 
 #                             na.strings = c("NA","","-"))) 
-# #Victim Table
+# 
+# #SWITRS Victim Table 
 # victim = tbl_df(read.csv('~/Desktop/moto_crash/switrs/VictimRecords.txt',
 #                         header=T, 
 #                         strip.white = T, 
 #                         na.strings = c("NA","","-"))) 
-
-
-#Count Rows with NAs in Interesting Features
-collision %>%
-  filter(MOTORCYCLE_ACCIDENT == 'Y') %>%
-  filter(is.na(INTERSECTION) |
-           (is.na(WEATHER_1) & is.na(WEATHER_2)) | 
-           (is.na(STATE_HWY_IND)) | 
-           (is.na(TYPE_OF_COLLISION)) | 
-           (is.na(MVIW)) | 
-           (is.na(ROAD_COND_1) & is.na(ROAD_COND_2)) | 
-           (is.na(LIGHTING))
-  ) %>%
-  summarise(rows_with_NAs = n())#344 out of 10533 (3.27%)
+#
+# # Road Quality Data
+# #https://data.lacity.org/A-Livable-and-Sustainable-City/Road-Surface-Condition-Map/d9rz-k88a
+# pci = tbl_df(read.csv('~/Desktop/moto_crash/road_conditions_2017.csv',
+#                stringsAsFactors = F,
+#                #quote = "\"",
+#                header=T))
 
 #Select Relevant Data
 moto_dat = collision %>%
@@ -161,16 +143,28 @@ moto_dat =
 View(moto_dat)
 summary(moto_dat)
 
-# #Check on missing data
-# 
-# pMiss <- function(x){sum(is.na(x))/length(x)*100}
-# 
-# #Missing data percentages
-# apply(data,2,pMiss) #Columns
-# #View(moto_dat[apply(moto_dat,1,pMiss)>5,]) #Rows with higher than 5%
-# x = moto_dat[apply(moto_dat,1,pMiss)>0,] #Rows with any NAs
-# 
+#Count Rows with NAs in Interesting Features
+collision %>%
+  filter(MOTORCYCLE_ACCIDENT == 'Y') %>%
+  filter(is.na(INTERSECTION) |
+           (is.na(WEATHER_1) & is.na(WEATHER_2)) | 
+           (is.na(STATE_HWY_IND)) | 
+           (is.na(TYPE_OF_COLLISION)) | 
+           (is.na(MVIW)) | 
+           (is.na(ROAD_COND_1) & is.na(ROAD_COND_2)) | 
+           (is.na(LIGHTING))
+  ) %>%
+  summarise(rows_with_NAs = n())
+#Affected Data: 
+# 344 rows out of 10533 (3.27%)
+# 9 columns with NAs (7 distinct)
 
-## TODO: Impute missing values
-## TODO: Save dataset
+#Use Random Forests to Impute Missing Values
+set.seed(1047)
+moto_dat.imp = missForest(as.data.frame(moto_dat),variablewise = TRUE)
 
+#Out of Bag Error for Imputed Columns
+moto_dat.imp$OOBerror
+
+#Get Data
+#moto_dat.imp$Ximp
