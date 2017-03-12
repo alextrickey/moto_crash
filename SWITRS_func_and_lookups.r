@@ -1,11 +1,14 @@
 #SWITRS Functions and Lookups
 
-# Date Format Functions
+# Function to Format Dates
 date_format <- function(date) {
   if (is.na(date)) date = NA
   else date = as.Date(as.character(date),'%Y%m%d')
   date
 }
+
+# Function to Get Season
+# Source: http://stackoverflow.com/questions/9500114
 getSeason <- function(DATES) {
   WS <- as.Date("2012-12-15", format = "%Y-%m-%d") # Winter Solstice
   SE <- as.Date("2012-3-15",  format = "%Y-%m-%d") # Spring Equinox
@@ -25,6 +28,9 @@ na_as_no <- function(yes_and_nas) {
   sapply(yes_and_nas,function (x) (if (is.na(x)) "N" else "Y"))
 }
 
+# Combine/Correct Variables using Two Fields with Same Code Set
+#   e.g. weather_1 and weather_2 contain the same kind of codes
+#   Split into one column for each code
 merge_and_recode <- function(v1,v2,codes) {
   response = rep(0,length(v1))
   for (i in 1:length(v1)) {
@@ -40,7 +46,7 @@ merge_and_recode <- function(v1,v2,codes) {
   response
 }
 
-#Lookup Table(s)
+#Lookup Tables
 collision_severity_lookup = c(
   '1' = 'Fatal',
   '2' = 'Injury (Severe)',
@@ -50,11 +56,12 @@ collision_severity_lookup = c(
 )
 
 day_lookup = c('1'='M','2'='Tu','3'='W','4'='Th','5'='F','6'='Sa','7'='Su')
+
 violation_lookup = c(
   '01' = 'Driving or Bicycling Under the Influence of Alcohol or Drug',
   '02' = 'Impeding Traffic',
   '03' = 'Unsafe Speed',
-  '04' = 'Following Too Closely',
+  '04' = 'Miscellaneous', #'Following Too Closely' -- only 5 cases
   '05' = 'Wrong Side of Road',
   '06' = 'Improper Passing',
   '07' = 'Unsafe Lane Change',
@@ -65,8 +72,8 @@ violation_lookup = c(
   '12' = 'Traffic Signals and Signs',
   '13' = 'Hazardous Parking',
   '14' = 'Lights',
-  '15' = 'Brakes',
-  '16' = 'Other Equipment',
+  '15' = 'Miscellaneous', #'Brakes' -- only 1 case
+  '16' = 'Miscellaneous', #'Other Equipment' -- only 1 case
   '17' = 'Other Hazardous Violation',
   '18' = 'Other Than Driver (or Pedestrian)',
   '19' = 'Code 19',

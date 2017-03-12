@@ -6,11 +6,15 @@ require(missForest)
 #require(ggmap)
 source('SWITRS_func_and_lookups.r')
 
-#SWITRS Bike, Pedestrian and Motorcycle Data
+#SWITRS Collision Data
+#http://iswitrs.chp.ca.gov/Reports/jsp/userLogin.jsp
+#   Data Requested: 
+#     Bike, Pedestrian and Motorcycle Data
+#     Dates Jan 2012 - Feb 2017
 #Collision Table
 collision = tbl_df(read.csv('~/Desktop/moto_crash/switrs/CollisionRecords.txt',
-                     header=T, 
-                     strip.white = T, 
+                     header=TRUE, 
+                     strip.white = TRUE, 
                      na.strings = c("NA","","-"))) 
 
 # ## Additional data sources not currently in use
@@ -72,12 +76,15 @@ moto_dat =
                          'Y','N'))
   ) %>%
   #Calculate Some Time-Related Variables
-  mutate(rush_hour_am = as.factor(
-              (COLLISION_TIME >= 700 & COLLISION_TIME <= 900)), #7-9am
-         rush_hour_pm = as.factor(
-              (COLLISION_TIME >= 1500 & COLLISION_TIME <= 1900)), #3-7pm
-         late_night = as.factor(
-              (COLLISION_TIME >= 2300 | COLLISION_TIME <= 500)), #11pm-5am
+  mutate(rush_hour_am = as.factor(ifelse(
+              (COLLISION_TIME >= 700 & COLLISION_TIME <= 900), #7-9am
+              'Y','N')),
+         rush_hour_pm = as.factor(ifelse(
+              (COLLISION_TIME >= 1500 & COLLISION_TIME <= 1900), #3-7pm
+              'Y','N')),
+         late_night = as.factor(ifelse(
+              (COLLISION_TIME >= 2300 | COLLISION_TIME <= 500), #11pm-5am
+              'Y','N')),
          day_of_week = as.factor(day_lookup[DAY_OF_WEEK])
   ) %>%
   #Transform/Recode Weather Columns
@@ -95,8 +102,9 @@ moto_dat =
     intersection = as.factor(INTERSECTION),
     state_hwy_ind = as.factor(STATE_HWY_IND),
     road_not_dry = as.factor(
-        road_surface_lookup[ROAD_SURFACE] %in% 
-          c("Slippery (Muddy, Oily, etc.)","Snowy or Icy","Wet")),
+        ifelse(road_surface_lookup[ROAD_SURFACE] %in% 
+            c("Slippery (Muddy, Oily, etc.)","Snowy or Icy","Wet"),
+            'Y','N')),
     lighting = as.factor(light_lookup[LIGHTING])
     #control_dev = as.factor(control_dev_lookup[CONTROL_DEVICE])
     #exclude - only 22 non-functioning, 9 obsured, otherwise working/irrelevant
@@ -127,20 +135,20 @@ moto_dat =
     cross_street = paste(PRIMARY_RD,'and',SECONDARY_RD,'Los Angeles')
   ) %>%
   select(
-    #CASE_ID, cross_street,
-    #DVs
+    #Outcomes of Interest
     mc_killed, mc_injured, collision_severity, severe,
     #When:
     ACCIDENT_YEAR, season, rush_hour_am, rush_hour_pm, late_night, day_of_week,
     #Environment Conditions:
-    starts_with('w_'), road_not_dry, road_condition_issue, lighting, 
+    starts_with('w_'), #weather variables
+    road_not_dry, road_condition_issue, lighting, 
     #Collision Details:
     intersection, state_hwy_ind, 
     type_of_collision, pcf_viol_category, mviw, alcohol_involved, 
     truck_accident
   )
 
-View(moto_dat)
+#View(moto_dat)
 summary(moto_dat)
 
 #Count Rows with NAs in Interesting Features
@@ -164,7 +172,15 @@ set.seed(1047)
 moto_dat.imp = missForest(as.data.frame(moto_dat),variablewise = TRUE)
 
 #Out of Bag Error for Imputed Columns
-moto_dat.imp$OOBerror
+data.frame(names(moto_dat),moto_dat.imp$OOBerror)
 
-#Get Data
-#moto_dat.imp$Ximp
+#Save Dataset Variations
+write.csv(moto_dat,
+          file = "processed_data/moto_dat_with_NA.csv",
+          row.names = FALSE)
+write.csv(moto_dat.imp$ximp,
+          file = "processed_data/moto_dat_imputed_NA.csv",
+          row.names = FALSE)
+write.csv(na.omit(moto_dat),
+          file = "processed_data/moto_dat_dropped_NA.csv",
+          row.names = FALSE)
