@@ -56,11 +56,13 @@ collision %>%
 #Select Relevant Data
 moto_dat = collision %>%
   filter(MOTORCYCLE_ACCIDENT == 'Y') %>%
-  select(CASE_ID, COLLISION_DATE, ACCIDENT_YEAR, COLLISION_TIME, DAY_OF_WEEK,
+  select(CASE_ID, COUNT_MC_KILLED, COUNT_MC_INJURED, COLLISION_SEVERITY,
+         COLLISION_DATE, ACCIDENT_YEAR, COLLISION_TIME, DAY_OF_WEEK,
          INTERSECTION, WEATHER_1, WEATHER_2, STATE_HWY_IND, 
          PCF_VIOL_CATEGORY, TYPE_OF_COLLISION, MVIW, ROAD_SURFACE,
          ROAD_COND_1, ROAD_COND_2, LIGHTING, CONTROL_DEVICE, #exclude?
-         ALCOHOL_INVOLVED, TRUCK_ACCIDENT)
+         ALCOHOL_INVOLVED, TRUCK_ACCIDENT, PRIMARY_RD, SECONDARY_RD)
+         #Add later? -- CHP_VEHTYPE_AT_FAULT / STWD_VEHTYPE_AT_FAULT
 
 #Look at Primary Collision Factor (PCF) Categories
 moto_dat %>% 
@@ -71,11 +73,22 @@ moto_dat %>%
 
 
 #Some Quirky Transformations
-moto_dat$COLLISION_DATE = sapply(moto_dat$COLLISION_DATE,date_format)
+moto_dat$collision_date = sapply(moto_dat$COLLISION_DATE,date_format)
 moto_dat$season = as.factor(sapply(moto_dat$COLLISION_DATE,getSeason))
 
 #Some Less Quirky Transformations
-moto_dat = moto_dat %>%
+moto_dat = 
+  moto_dat %>%
+  #Potential DVs
+  mutate(
+        mc_killed = as.factor(ifelse(COUNT_MC_KILLED>0, 'Y', 'N')),
+        mc_injured = as.factor(ifelse(COUNT_MC_INJURED>0, 'Y', 'N')),
+        collision_severity = as.factor(
+                  collision_severity_lookup[as.factor(COLLISION_SEVERITY)]),
+        severe = as.factor(
+                  ifelse(collision_severity %in% c('Fatal','Injury (Severe)'),
+                         'Y','N'))
+  ) %>%
   #Calculate Some Time-Related Variables
   mutate(rush_hour_am = as.factor(
               (COLLISION_TIME >= 700 & COLLISION_TIME <= 900)), #7-9am
@@ -86,32 +99,37 @@ moto_dat = moto_dat %>%
          day_of_week = as.factor(day_lookup[DAY_OF_WEEK])
   ) %>%
   #Transform/Recode Weather Columns
-  mutate(weather_clear  = merge_and_recode(WEATHER_1,WEATHER_2,'A'),
-         weather_cloudy = merge_and_recode(WEATHER_1,WEATHER_2,'B'),
-         weather_rainy  = merge_and_recode(WEATHER_1,WEATHER_2,'C'),
-         weather_snowy  = merge_and_recode(WEATHER_1,WEATHER_2,'D'),
-         weather_foggy  = merge_and_recode(WEATHER_1,WEATHER_2,'E'),
-         weather_other  = merge_and_recode(WEATHER_1,WEATHER_2,'F'), 
-         weather_windy  = merge_and_recode(WEATHER_1,WEATHER_2,'G')
+  mutate(w_clear  = as.factor(merge_and_recode(WEATHER_1,WEATHER_2,'A')),
+         w_cloudy = as.factor(merge_and_recode(WEATHER_1,WEATHER_2,'B')),
+         w_rainy  = as.factor(merge_and_recode(WEATHER_1,WEATHER_2,'C'))
+         #These are too infrequent... exclude
+         #w_snowy  = as.factor(merge_and_recode(WEATHER_1,WEATHER_2,'D')),
+         #w_foggy  = as.factor(merge_and_recode(WEATHER_1,WEATHER_2,'E')),
+         #w_other  = as.factor(merge_and_recode(WEATHER_1,WEATHER_2,'F')), 
+         #w_windy  = as.factor(merge_and_recode(WEATHER_1,WEATHER_2,'G'))
   ) %>%
   #Transform Road, Highway Data
   mutate(
     intersection = as.factor(INTERSECTION),
     state_hwy_ind = as.factor(STATE_HWY_IND),
-    road_surface = as.factor(
-        road_surface_lookup[ROAD_SURFACE]), #recode: B,C,D = not dry
-    lighting = as.factor(light_lookup[LIGHTING]),
-    control_dev = as.factor(control_dev_lookup[CONTROL_DEVICE])
+    road_not_dry = as.factor(
+        road_surface_lookup[ROAD_SURFACE] %in% 
+          c("Slippery (Muddy, Oily, etc.)","Snowy or Icy","Wet")),
+    lighting = as.factor(light_lookup[LIGHTING])
+    #control_dev = as.factor(control_dev_lookup[CONTROL_DEVICE])
+    #exclude - only 22 non-functioning, 9 obsured, otherwise working/irrelevant
   ) %>%
   #Transform Road Condition
-  mutate(rc_holes_ruts       = merge_and_recode(ROAD_COND_1,ROAD_COND_2,'A'), 
-         rc_loose_material   = merge_and_recode(ROAD_COND_1,ROAD_COND_2,'B'),
-         rc_obstruction      = merge_and_recode(ROAD_COND_1,ROAD_COND_2,'C'),
-         rc_construction     = merge_and_recode(ROAD_COND_1,ROAD_COND_2,'D'),
-         rc_reduced_width    = merge_and_recode(ROAD_COND_1,ROAD_COND_2,'E'),
-         rc_flooding         = merge_and_recode(ROAD_COND_1,ROAD_COND_2,'F'), 
-         rc_other_condition  = merge_and_recode(ROAD_COND_1,ROAD_COND_2,'G'),
-         rc_normal_condition = merge_and_recode(ROAD_COND_1,ROAD_COND_2,'H')
+  mutate(road_condition_issue = as.factor(
+              #includes 
+              #   holes & ruts (A), loose material (B), obstruction (C), 
+              #   construction (D), reduced road width (E), 
+              #   and "other" (G) issues 
+              #excludes
+              #   flooding (never occurred in data) -- code F
+              #   normal condition (not informative) -- code H
+              merge_and_recode(ROAD_COND_1,ROAD_COND_2,
+                               codes =c('A','B','C','D','E','G')))
   ) %>%  
   #Transform Collision Data
   mutate(
@@ -120,19 +138,39 @@ moto_dat = moto_dat %>%
     mviw = as.factor(mviw_lookup[MVIW]), #motor vehicle involved with
     alcohol_involved = as.factor(na_as_no(ALCOHOL_INVOLVED)),
     truck_accident = as.factor(na_as_no(TRUCK_ACCIDENT))
+  ) %>%
+  #Convert primary and secondary roads to cross streets 
+  #(later lookup geocodes with: geocode(moto_dat$cross_street)
+  mutate(
+    cross_street = paste(PRIMARY_RD,'and',SECONDARY_RD,'Los Angeles')
+  ) %>%
+  select(
+    #CASE_ID, cross_street,
+    #DVs
+    mc_killed, mc_injured, collision_severity, severe,
+    #When:
+    ACCIDENT_YEAR, season, rush_hour_am, rush_hour_pm, late_night, day_of_week,
+    #Environment Conditions:
+    starts_with('w_'), road_not_dry, road_condition_issue, lighting, 
+    #Collision Details:
+    intersection, state_hwy_ind, 
+    type_of_collision, pcf_viol_category, mviw, alcohol_involved, 
+    truck_accident
   )
 
-CHP_VEHTYPE_AT_FAULT (merge with STWD_VEHTYPE_AT_FAULT?)
-mutate(cross_street = paste(PRIMARY_RD,'and',SECONDARY_RD,'Los Angeles'))
-  select(
-    #Time Related
-    COLLISION_YEAR, season, rush_hour_am, rush_hour_pm, late_night, day_of_week,
-    
+View(moto_dat)
+summary(moto_dat)
 
+# #Check on missing data
+# 
+# pMiss <- function(x){sum(is.na(x))/length(x)*100}
+# 
+# #Missing data percentages
+# apply(data,2,pMiss) #Columns
+# #View(moto_dat[apply(moto_dat,1,pMiss)>5,]) #Rows with higher than 5%
+# x = moto_dat[apply(moto_dat,1,pMiss)>0,] #Rows with any NAs
+# 
 
-
-#geocode(moto_dat$cross_street)
-
-
-
+## TODO: Impute missing values
+## TODO: Save dataset
 

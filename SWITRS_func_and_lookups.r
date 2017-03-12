@@ -6,14 +6,15 @@ date_format <- function(date) {
   else date = as.Date(as.character(date),'%Y%m%d')
   date
 }
-getSeason <- function(DATES) {#http://stackoverflow.com/questions/9500114
+getSeason <- function(DATES) {
   WS <- as.Date("2012-12-15", format = "%Y-%m-%d") # Winter Solstice
   SE <- as.Date("2012-3-15",  format = "%Y-%m-%d") # Spring Equinox
   SS <- as.Date("2012-6-15",  format = "%Y-%m-%d") # Summer Solstice
   FE <- as.Date("2012-9-15",  format = "%Y-%m-%d") # Fall Equinox
   
   # Convert dates from any year to 2012 dates
-  d <- as.Date(strftime(DATES, format="2012-%m-%d",tz="America/Los_Angeles"))
+  d <- as.Date(as.character(DATES), "%Y%m%d")
+  d <- as.Date(strftime(d, format="2012-%m-%d"))
   
   ifelse (d >= WS | d < SE, "Winter",
           ifelse (d >= SE & d < SS, "Spring",
@@ -24,10 +25,11 @@ na_as_no <- function(yes_and_nas) {
   sapply(yes_and_nas,function (x) (if (is.na(x)) "N" else "Y"))
 }
 
-merge_and_recode <- function(v1,v2,code) {
+merge_and_recode <- function(v1,v2,codes) {
   response = rep(0,length(v1))
   for (i in 1:length(v1)) {
-    if ( (!is.na(v1[i]) & v1[i] == code) | (!is.na(v2[i]) & v2[i] == code)) {
+    if ( (!is.na(v1[i]) & v1[i] %in% codes) | 
+         (!is.na(v2[i]) & v2[i] %in% codes)) {
       response[i] = 'Y'
     } else if (is.na(v1[i]) & is.na(v2[i])) {
       response[i] = NA
@@ -39,6 +41,14 @@ merge_and_recode <- function(v1,v2,code) {
 }
 
 #Lookup Table(s)
+collision_severity_lookup = c(
+  '1' = 'Fatal',
+  '2' = 'Injury (Severe)',
+  '3' = 'Injury (Other Visible)',
+  '4' = 'Injury (Complaint of Pain)',
+  '0' = 'PDO (property damage only)'
+)
+
 day_lookup = c('1'='M','2'='Tu','3'='W','4'='Th','5'='F','6'='Sa','7'='Su')
 violation_lookup = c(
   '01' = 'Driving or Bicycling Under the Influence of Alcohol or Drug',
@@ -119,5 +129,7 @@ light_lookup = c(
   'B' = 'Dusk or Dawn',
   'C' = 'Dark - Street Lights',
   'D' = 'Dark - No Street Lights',
-  'E' = 'Dark - Street Lights Not Functioning'
+  'E' = 'Dark - No Street Lights' 
+  #E='Dark - Street Lights Not Functioning' very rare
+  #combining with code D
 )
