@@ -7,7 +7,7 @@ date_format <- function(date) {
   date
 }
 
-# Function to Get Season
+# Function to Get the Season
 # Source: http://stackoverflow.com/questions/9500114
 getSeason <- function(DATES) {
   WS <- as.Date("2012-12-15", format = "%Y-%m-%d") # Winter Solstice
@@ -24,6 +24,7 @@ getSeason <- function(DATES) {
                   ifelse (d >= SS & d < FE, "Summer", "Fall")))
 }
 
+#Function to Recode Fields that Use Blanks to Indicate "No"
 na_as_no <- function(yes_and_nas) {
   sapply(yes_and_nas,function (x) (if (is.na(x)) "N" else "Y"))
 }
@@ -55,7 +56,13 @@ collision_severity_lookup = c(
   '0' = 'PDO (property damage only)'
 )
 
-day_lookup = c('1'='M','2'='Tu','3'='W','4'='Th','5'='F','6'='Sa','7'='Su')
+day_lookup = c('1'='M',
+               '2'='Tu',
+               '3'='W',
+               '4'='Th',
+               '5'='F',
+               '6'='Sa',
+               '7'='Su')
 
 violation_lookup = c(
   '01' = 'Driving or Bicycling Under the Influence of Alcohol or Drug',
