@@ -7,26 +7,26 @@ source('SWITRS_func_and_lookups.r')
 
 #SWITRS -- Collision Data
 #http://iswitrs.chp.ca.gov/Reports/jsp/userLogin.jsp
-#   Data Requested: 
+#   Data Requested:
 #     Bike, Pedestrian and Motorcycle Data
 #     Dates Jan 2012 - Feb 2017
 #Collision Table
 collision = tbl_df(read.csv('~/Desktop/moto_crash/switrs/CollisionRecords.txt',
-                     header=TRUE, 
-                     strip.white = TRUE, 
-                     na.strings = c("NA","","-"))) 
+                     header=TRUE,
+                     strip.white = TRUE,
+                     na.strings = c("NA","","-")))
 
-# #SWITRS -- Collision Party Data 
+# #SWITRS -- Collision Party Data
 # party = tbl_df(read.csv('~/Desktop/moto_crash/switrs/PartyRecords.txt',
-#                             header=T, 
-#                             strip.white = T, 
-#                             na.strings = c("NA","","-"))) 
-# 
-# #SWITRS -- Collision Victim Data 
+#                             header=T,
+#                             strip.white = T,
+#                             na.strings = c("NA","","-")))
+#
+# #SWITRS -- Collision Victim Data
 # victim = tbl_df(read.csv('~/Desktop/moto_crash/switrs/VictimRecords.txt',
-#                         header=T, 
-#                         strip.white = T, 
-#                         na.strings = c("NA","","-"))) 
+#                         header=T,
+#                         strip.white = T,
+#                         na.strings = c("NA","","-")))
 #
 # #LA Public Works -- Road Surface Condition
 # #https://data.lacity.org/A-Livable-and-Sustainable-City/Road-Surface-Condition-Map/d9rz-k88a
@@ -40,27 +40,27 @@ moto_dat = collision %>%
   filter(MOTORCYCLE_ACCIDENT == 'Y') %>%
   select(
          #unique id for collision
-         CASE_ID, 
+         CASE_ID,
          #outcomes
-         COUNT_MC_KILLED, COUNT_MC_INJURED, COLLISION_SEVERITY, 
+         COUNT_MC_KILLED, COUNT_MC_INJURED, COLLISION_SEVERITY,
          #when
-         COLLISION_DATE, ACCIDENT_YEAR, COLLISION_TIME, DAY_OF_WEEK, 
+         COLLISION_DATE, ACCIDENT_YEAR, COLLISION_TIME, DAY_OF_WEEK,
          #where
          INTERSECTION, STATE_HWY_IND, PRIMARY_RD, SECONDARY_RD,
          #environment/conditions
          WEATHER_1, WEATHER_2, ROAD_SURFACE, ROAD_COND_1, ROAD_COND_2, LIGHTING,
          #accident/collision details
-         PCF_VIOL_CATEGORY, HIT_AND_RUN, TYPE_OF_COLLISION, MVIW, 
-         ALCOHOL_INVOLVED, TRUCK_ACCIDENT, 
+         PCF_VIOL_CATEGORY, HIT_AND_RUN, TYPE_OF_COLLISION, MVIW,
+         ALCOHOL_INVOLVED, TRUCK_ACCIDENT,
          #covariates (impact collision-level severity measure)
          PEDESTRIAN_ACCIDENT, BICYCLE_ACCIDENT
          )
 
 #Look at Primary Collision Factor (PCF) Categories
-moto_dat %>% 
-  mutate(vio = violation_lookup[PCF_VIOL_CATEGORY]) %>% 
-  group_by(vio) %>% 
-  summarise(count = n()) %>% 
+moto_dat %>%
+  mutate(vio = violation_lookup[PCF_VIOL_CATEGORY]) %>%
+  group_by(vio) %>%
+  summarise(count = n()) %>%
   arrange(desc(count))
 
 
@@ -69,7 +69,7 @@ moto_dat$collision_date = sapply(moto_dat$COLLISION_DATE,date_format)
 moto_dat$season = as.factor(sapply(moto_dat$COLLISION_DATE,getSeason))
 
 #Some Less Quirky Transformations
-moto_dat = 
+moto_dat =
   moto_dat %>%
   #Potential DVs
   mutate(
@@ -115,7 +115,7 @@ moto_dat =
     intersection = as.factor(INTERSECTION),
     state_hwy_ind = as.factor(STATE_HWY_IND),
     road_not_dry = as.factor(
-        ifelse(road_surface_lookup[ROAD_SURFACE] %in% 
+        ifelse(road_surface_lookup[ROAD_SURFACE] %in%
             c("Slippery (Muddy, Oily, etc.)","Snowy or Icy","Wet"),
             'Y','N')),
     lighting = as.factor(light_lookup[LIGHTING])
@@ -124,16 +124,16 @@ moto_dat =
   ) %>%
   #Transform Road Condition
   mutate(road_condition_issue = as.factor(
-              #includes 
-              #   holes & ruts (A), loose material (B), obstruction (C), 
-              #   construction (D), reduced road width (E), 
-              #   and "other" (G) issues 
+              #includes
+              #   holes & ruts (A), loose material (B), obstruction (C),
+              #   construction (D), reduced road width (E),
+              #   and "other" (G) issues
               #excludes
               #   flooding (never occurred in data) -- code F
               #   normal condition (not informative) -- code H
               merge_and_recode(ROAD_COND_1,ROAD_COND_2,
                                codes =c('A','B','C','D','E','G')))
-  ) %>%  
+  ) %>%
   #Transform Collision Data
   mutate(
     pcf_viol_category = as.factor(violation_lookup[PCF_VIOL_CATEGORY]),
@@ -141,30 +141,30 @@ moto_dat =
     mviw = as.factor(mviw_lookup[MVIW]), #motor vehicle involved with
     alcohol_involved = as.factor(na_as_no(ALCOHOL_INVOLVED)),
     truck_accident = as.factor(na_as_no(TRUCK_ACCIDENT)),
-    pedestrian_accident = as.factor(na_as_no(PEDESTRIAN_ACCIDENT)), 
+    pedestrian_accident = as.factor(na_as_no(PEDESTRIAN_ACCIDENT)),
     bicycle_accident = as.factor(na_as_no(BICYCLE_ACCIDENT))
   ) %>%
-  #Convert primary and secondary roads to cross streets 
+  #Convert primary and secondary roads to cross streets
   #(later lookup geocodes with: geocode(moto_dat$cross_street)
   mutate(
     cross_street = paste(PRIMARY_RD,'and',SECONDARY_RD,'Los Angeles')
   ) %>%
   select(
     #unique id for collision
-    CASE_ID, 
+    CASE_ID,
     #outcomes
     mc_killed, mc_injured, collision_severity, severe,
-    #when 
+    #when
     accident_year, hours_since_midnight,
     season, rush_hour, late_night, day_of_week,
-    #where 
+    #where
     intersection, state_hwy_ind, #cross_streets,
     #environment/conditions
     starts_with('w_'), #weather variables
-    road_not_dry, road_condition_issue, lighting, 
+    road_not_dry, road_condition_issue, lighting,
     #accident/collision details
-    type_of_collision, pcf_viol_category, mviw, alcohol_involved, 
-    truck_accident, 
+    type_of_collision, pcf_viol_category, mviw, alcohol_involved,
+    truck_accident,
     #covariates (impact collision-level severity measure)
     pedestrian_accident, bicycle_accident
   )
@@ -176,15 +176,15 @@ summary(moto_dat)
 collision %>%
   filter(MOTORCYCLE_ACCIDENT == 'Y') %>%
   filter(is.na(INTERSECTION) |
-           (is.na(WEATHER_1) & is.na(WEATHER_2)) | 
-           (is.na(STATE_HWY_IND)) | 
-           (is.na(TYPE_OF_COLLISION)) | 
-           (is.na(MVIW)) | 
-           (is.na(ROAD_COND_1) & is.na(ROAD_COND_2)) | 
+           (is.na(WEATHER_1) & is.na(WEATHER_2)) |
+           (is.na(STATE_HWY_IND)) |
+           (is.na(TYPE_OF_COLLISION)) |
+           (is.na(MVIW)) |
+           (is.na(ROAD_COND_1) & is.na(ROAD_COND_2)) |
            (is.na(LIGHTING))
   ) %>%
   summarise(rows_with_NAs = n())
-#Affected Data: 
+#Affected Data:
 # 344 rows out of 10533 (3.27%)
 # 9 columns with NAs (7 distinct)
 
@@ -206,5 +206,3 @@ write.csv(cbind(moto_dat[,1],moto_dat.imp$ximp),
 write.csv(na.omit(moto_dat),
           file = "processed_data/moto_dat_dropped_NA.csv",
           row.names = FALSE)
-
-

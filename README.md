@@ -1,3 +1,2 @@
 # moto_crash
-Examine motorcycle accidents in Los Angeles 
-
+Examine motorcycle accidents in Los Angeles
