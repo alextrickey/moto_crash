@@ -1,7 +1,4 @@
 
-#Navigate to moto_crash directory
-setwd("/Users/alex/Desktop/moto_crash")
-
 #Load and Start H2O
 require(h2o)
 h2o.init(nthreads=-1, max_mem_size = "8G")

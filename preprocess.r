@@ -1,6 +1,3 @@
-
-setwd('~/Desktop/moto_crash')
-
 require(dplyr)
 require(missForest)
 source('SWITRS_func_and_lookups.r')
@@ -11,26 +8,26 @@ source('SWITRS_func_and_lookups.r')
 #     Bike, Pedestrian and Motorcycle Data
 #     Dates Jan 2012 - Feb 2017
 #Collision Table
-collision = tbl_df(read.csv('~/Desktop/moto_crash/switrs/CollisionRecords.txt',
+collision = tbl_df(read.csv('switrs/CollisionRecords.txt',
                      header=TRUE,
                      strip.white = TRUE,
                      na.strings = c("NA","","-")))
 
 # #SWITRS -- Collision Party Data
-# party = tbl_df(read.csv('~/Desktop/moto_crash/switrs/PartyRecords.txt',
+# party = tbl_df(read.csv('switrs/PartyRecords.txt',
 #                             header=T,
 #                             strip.white = T,
 #                             na.strings = c("NA","","-")))
 #
 # #SWITRS -- Collision Victim Data
-# victim = tbl_df(read.csv('~/Desktop/moto_crash/switrs/VictimRecords.txt',
+# victim = tbl_df(read.csv('switrs/VictimRecords.txt',
 #                         header=T,
 #                         strip.white = T,
 #                         na.strings = c("NA","","-")))
 #
 # #LA Public Works -- Road Surface Condition
 # #https://data.lacity.org/A-Livable-and-Sustainable-City/Road-Surface-Condition-Map/d9rz-k88a
-# pci = tbl_df(read.csv('~/Desktop/moto_crash/road_conditions_2017.csv',
+# pci = tbl_df(read.csv('lacity/road_conditions_2017.csv',
 #                stringsAsFactors = F,
 #                #quote = "\"",
 #                header=T))
