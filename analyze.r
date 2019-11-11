@@ -178,37 +178,38 @@ tuned_gbm_perf_test
 require(dplyr)
 require(ggplot2)
 
-# Plot GLM Coefficients
-glm_coef = h2o.varimp(glm_baseline)
-glm_coef_df = data.frame(glm_coef$names,glm_coef$coefficients,glm_coef$sign)
-names(glm_coef_df) <-c('Variable.Level','Coefficient','Sign')
-glm_coef_df = glm_coef_df[complete.cases(glm_coef_df),]
-glm_coef_df <- transform(glm_coef_df, Variable.Level = reorder(Variable.Level,
-                                                        Coefficient))
 
-p = ggplot(glm_coef_df[1:20,],aes(Variable.Level,Coefficient,fill=Sign))
+# Plot GLM Coefficients
+glm_coef = h2o.coef(glm_baseline)
+glm_coef = data.frame(variable=names(glm_coef), coef=glm_coef)
+glm_coef$sign = as.factor(sign(glm_coef$coef))
+
+glm_imp = h2o.varimp(glm_baseline)
+glm_imp = transform(glm_imp, variable = reorder(variable, scaled_importance))
+glm_imp = merge(glm_imp, glm_coef, by = "variable", all.x = TRUE)
+
+p = ggplot(glm_imp[order(-glm_imp$scaled_importance),][1:20,], 
+           aes(variable, scaled_importance, fill=sign))
 p + geom_bar(stat = "identity") + coord_flip() + theme_minimal()
 
 
 # Plot Variable Importances
 gbm_imp = h2o.varimp(tuned_gbm)
-gbm_imp_df = data.frame(gbm_imp$variable,gbm_imp$scaled_importance)
-names(gbm_imp_df) <-c('Variable','Scaled_Importance')
-gbm_imp_df <- transform(gbm_imp_df, Variable = reorder(Variable, Scaled_Importance))
-
-p = ggplot(gbm_imp_df,aes(Variable,Scaled_Importance))
+gbm_imp <- transform(gbm_imp, variable = reorder(variable, scaled_importance))
+p = ggplot(gbm_imp, aes(variable, scaled_importance))
 p + geom_bar(stat = "identity") + coord_flip() + theme_minimal()
 
-# Accident Severity by Day of Week and Time of Day?
+
+# Accident Severity
 moto_dat_df = tbl_df(as.data.frame(moto_dat))
 
 #MV Involved With
-p = ggplot(moto_dat_df,aes(mviw,fill=severe))
+p = ggplot(moto_dat_df, aes(mviw,fill=severe))
 p + geom_bar() + theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 #Violation Category
 p = ggplot(moto_dat_df,aes(pcf_viol_category,fill=severe))
-p + geom_bar()
+p + geom_bar() + coord_flip() + theme_minimal()
 
 #Type of Collision
 p = ggplot(moto_dat_df,aes(type_of_collision,fill=severe))
@@ -221,5 +222,5 @@ p + geom_bar()
 #Day and Time
 moto_dat_df$day_of_week = factor(as.character(moto_dat_df$day_of_week),
                                     levels=c('M','Tu','W','Th','F','Sa','Su'))
-p = ggplot(moto_dat_df,aes(hours_since_midnight,fill=severe))
+p = ggplot(moto_dat_df,aes(time_of_day,fill=severe))
 p + geom_histogram(binwidth=1) + facet_grid(day_of_week~state_hwy_ind)
