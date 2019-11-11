@@ -15,7 +15,7 @@ getSeason <- function(DATES) {
   SS <- as.Date("2012-6-15",  format = "%Y-%m-%d") # Summer Solstice
   FE <- as.Date("2012-9-15",  format = "%Y-%m-%d") # Fall Equinox
   
-  # Convert dates from any year to 2012 dates
+  # The year is arbitary, but set to match season dates
   d <- as.Date(as.character(DATES), "%Y%m%d")
   d <- as.Date(strftime(d, format="2012-%m-%d"))
   
