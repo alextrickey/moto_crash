@@ -44,8 +44,9 @@ glm_baseline <- h2o.glm(x = features_glm,
                    family = "binomial")
 glm_perf <- h2o.performance(model = glm_baseline,newdata = valid)
 glm_perf
-#Mean Per-Class Error:  0.3226529
+#Mean Per-Class Error:  0.3366404
 #AUC:  0.7294094
+
 
 #Default Random Forest
 rf_baseline <- h2o.randomForest(x = features,
@@ -55,8 +56,8 @@ rf_baseline <- h2o.randomForest(x = features,
                             seed = 1067)
 rf_perf1 <- h2o.performance(model = rf_baseline,newdata = valid)
 rf_perf1
-#Mean Per-Class Error:  0.3337867
-#AUC:  0.7132602
+#Mean Per-Class Error:  0.3179449
+#AUC:  0.7137967
 
 
 #Default GBM
@@ -67,8 +68,9 @@ gbm_baseline <- h2o.gbm(x = features,
                    seed = 1067)
 gbm_perf1 <- h2o.performance(model = gbm_baseline,newdata = valid)
 gbm_perf1
-#Mean Per-Class Error:  0.3219454
-#AUC:  0.7314944
+#Mean Per-Class Error:  0.3106437
+#AUC:  0.7334899
+
 
 #############
 ## Try DRF ##
@@ -110,8 +112,9 @@ tuned_drf <- h2o.getModel(tuned_drf_id)
 tuned_drf_perf_valid <- h2o.performance(model = tuned_drf,
                                         newdata = valid)
 tuned_drf_perf_valid
-#Mean Per-Class Error:  0.320215
-#AUC:  0.7352626
+#Mean Per-Class Error:  0.3146081
+#AUC:  0.732125
+
 
 #############
 ## Try GBM ##
@@ -146,8 +149,8 @@ gbm_gridperf <- h2o.getGrid(grid_id = "gbm_grid",
                             sort_by = "auc",
                             decreasing = TRUE)
 gbm_gridperf
-#Mean Per-Class Error:  0.3124102
-#AUC:  0.7412931
+#Mean Per-Class Error:  0.3170021
+#AUC:  0.7400444
 
 # Look at "best" model
 tuned_gbm_id <- gbm_gridperf@model_ids[[1]]
@@ -164,8 +167,8 @@ tuned_gbm_perf_valid
 tuned_gbm_perf_test <- h2o.performance(model = tuned_gbm,
                                         newdata = test)
 tuned_gbm_perf_test
-#Mean Per-Class Error:  0.3157915
-#AUC:  0.7566492
+#Mean Per-Class Error:  0.3369814
+#AUC:  0.7584865
 #gbm_grid_model_549
 
 
