@@ -25,7 +25,7 @@ test  <- splits[[3]] #15%
 #Identify Features
 outcomes <- c("mc_killed", "mc_injured", "collision_severity", "severe")
 features_glm <- setdiff(names(moto_dat),
-                       c("CASE_ID", "hours_since_midnight", outcomes))
+                       c("CASE_ID", "time_of_day", outcomes))
 features <- setdiff(names(moto_dat),
                        c("CASE_ID", "rush_hour", "late_night", outcomes))
 

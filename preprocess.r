@@ -96,7 +96,7 @@ moto_dat <-
          late_night = as.factor(ifelse(
               (COLLISION_TIME >= 2300 | COLLISION_TIME <= 500), #11pm-5am
               "Y", "N")),
-         hours_since_midnight = floor(COLLISION_TIME / 100) #hours
+         time_of_day = floor(COLLISION_TIME / 100) #hours
               + (COLLISION_TIME %% 100) / 60 #minutes (decimal)
   ) %>%
   #Transform/Recode Weather Columns [not mutually exclusive]
@@ -152,7 +152,7 @@ moto_dat <-
     #outcomes
     mc_killed, mc_injured, collision_severity, severe,
     #when
-    accident_year, hours_since_midnight,
+    accident_year, time_of_day,
     season, rush_hour, late_night, day_of_week,
     #where
     intersection, state_hwy_ind, #cross_streets,
