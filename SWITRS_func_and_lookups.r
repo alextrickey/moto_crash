@@ -9,14 +9,14 @@ date_format <- function(date) {
 
 # Function to Get the Season
 # Source: http://stackoverflow.com/questions/9500114
-getSeason <- function(DATES) {
+get_season <- function(dates) {
   WS <- as.Date("2012-12-15", format = "%Y-%m-%d") # Winter Solstice
   SE <- as.Date("2012-3-15",  format = "%Y-%m-%d") # Spring Equinox
   SS <- as.Date("2012-6-15",  format = "%Y-%m-%d") # Summer Solstice
   FE <- as.Date("2012-9-15",  format = "%Y-%m-%d") # Fall Equinox
 
   # The year is arbitary, but set to match season dates
-  d <- as.Date(as.character(DATES), "%Y%m%d")
+  d <- as.Date(as.character(dates), "%Y%m%d")
   d <- as.Date(strftime(d, format = "2012-%m-%d"))
 
   ifelse (d >= WS | d < SE, "Winter",

@@ -63,7 +63,7 @@ moto_dat %>%
 
 #Some Quirky Transformations
 moto_dat$collision_date <- sapply(moto_dat$COLLISION_DATE, date_format)
-moto_dat$season <- as.factor(sapply(moto_dat$COLLISION_DATE, getSeason))
+moto_dat$season <- as.factor(sapply(moto_dat$COLLISION_DATE, get_season))
 
 #Some Less Quirky Transformations
 moto_dat <-
